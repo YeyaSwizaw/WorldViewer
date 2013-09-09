@@ -15,45 +15,45 @@ void App::init() {
 } // void App::init();
 
 void App::generateWorld() {
-	wg::World::Ptr w = wg::World::create()->setChunkSize(WV_CHUNK_SIZE, WV_CHUNK_SIZE);
+	wg::World* w = (new wg::World)->setChunkSize(WV_CHUNK_SIZE);
 
 	tileColours.clear();
 	tiles.clear();
 
-	wg::NoiseMap::Ptr heightmap = wg::NoiseMap::create()
+	wg::RandomNoiseMap* heightmap = w->addRandomNoiseMap()
 		->setSeed(std::to_string(rand()))
 		->setGridSize(0.025);
 
-	wg::NoiseMap::Ptr random = wg::NoiseMap::create()
+	wg::RandomNoiseMap* random = w->addRandomNoiseMap()
 		->setSeed(std::to_string(rand()))
 		->setGridSize(0.1);
 
-	wg::NoiseMap::Ptr climate = wg::NoiseMap::create()
+	wg::RandomNoiseMap* climate = w->addRandomNoiseMap()
 		->setSeed(std::to_string(rand()))
 		->setGridSize(0.03);
 
-	wg::TileDef::Ptr tileWater = w->newTile()
-		->addConstraint(heightmap < -0.3);
+	wg::TileDef* tileWater = w->addTileDefinition()
+		->addConstraint({heightmap, wg::ConstraintType::LT, -0.3});
 
-	wg::TileDef::Ptr tileBeach = w->newTile()
-		->addConstraint(heightmap < -0.2);
+	wg::TileDef* tileBeach = w->addTileDefinition()
+		->addConstraint({heightmap, wg::ConstraintType::LT, -0.2});
 
-	wg::TileDef::Ptr tileHighMnt = w->newTile()
-		->addConstraint(heightmap > 0.6)
-		->addConstraint(random > 0.2);
+	wg::TileDef* tileHighMnt = w->addTileDefinition()
+		->addConstraint({heightmap, wg::ConstraintType::GT, 0.6})
+		->addConstraint({random, wg::ConstraintType::GT, 0.2});
 
-	wg::TileDef::Ptr tileMnt = w->newTile()
-		->addConstraint(heightmap > 0.45);
+	wg::TileDef* tileMnt = w->addTileDefinition()
+		->addConstraint({heightmap, wg::ConstraintType::GT, 0.45});
 
-	wg::TileDef::Ptr tileForest = w->newTile()
-		->addConstraint(climate > 0.2)
-		->addConstraint(heightmap > -0.1);
+	wg::TileDef* tileForest = w->addTileDefinition()
+		->addConstraint({heightmap, wg::ConstraintType::GT, -0.1})
+		->addConstraint({climate, wg::ConstraintType::GT, 0.2});
 
-	wg::TileDef::Ptr tileDesert = w->newTile()
-		->addConstraint(climate < -0.45)
-		->addConstraint(heightmap > -0.1);
+	wg::TileDef* tileDesert = w->addTileDefinition()
+		->addConstraint({heightmap, wg::ConstraintType::GT, -0.1})
+		->addConstraint({climate, wg::ConstraintType::LT, -0.45});
 
-	wg::TileDef::Ptr tilePlains = w->newTile();
+	wg::TileDef* tilePlains = w->addTileDefinition();
 
 	tileColours.insert({tileWater->getId(), sf::Color(0, 255, 255)});
 	tileColours.insert({tileBeach->getId(), sf::Color(255, 200, 0)});
