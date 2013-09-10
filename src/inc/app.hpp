@@ -9,6 +9,7 @@
 #include <map>
 #include <vector>
 #include <algorithm>
+#include <thread>
 
 #include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
@@ -29,6 +30,14 @@ public:
 	void run();
 
 private:
+	enum State {
+		GEN,
+		READY
+
+	}; // enum State;
+
+	State state;
+
 	sf::RenderWindow wind;
 
 	wg::EnhancedWorld<sf::Color>* w;
@@ -37,6 +46,9 @@ private:
 
 	int xOffset, yOffset;
 	int xChunkOff, yChunkOff;
+
+	void genState();
+	void readyState();
 
 	void clearChunks();
 	void generateWorld();

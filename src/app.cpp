@@ -2,14 +2,15 @@
 
 WV_NS
 
-App::App() {
+App::App()
+	: state(State::GEN) {
+		
 	srand(time(NULL));
 
 } // App::App();
 
 
 void App::init() {
-	generateWorld();
 	initWindow();
 
 } // void App::init();
@@ -107,6 +108,8 @@ void App::generateWorld() {
 	} // for(int chunkX = 0; chunkX < 3; ++chunkX);
 
 	std::cout << "Done!" << std::endl;
+
+	state = State::READY;
 
 } // void App::generateWorld();
 
@@ -269,61 +272,101 @@ void App::scrollWorld(int x, int y) {
 
 void App::run() {
 	while(wind.isOpen()) {
-		sf::Event e;
-		while(wind.pollEvent(e)) {
-			if(e.type == sf::Event::Closed) {
-				wind.close(); 
+		if(state == State::GEN) {
+			std::thread genThread(std::bind(&App::genState, this));
 
-			} // if(e.type == sf::Event::Closed);
+			wind.setActive(false);
 
-			if(e.type == sf::Event::KeyPressed) {
-				if(e.key.code == sf::Keyboard::Space) {
-					generateWorld();
+			generateWorld();
+			genThread.join();
 
-				} // if(e.key.code = sf::Keyboard::Space);
+		} // if(state == State::GEN);
+		else {
+			readyState();
 
-			} // if(e.type = sf::Event::KeyPressed);
-
-		} // while(wind.pollEvent(e));
-
-		if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
-			scrollWorld(-1, 0);
-
-		} // if(sf::Keyboard::Left::isPressed());
-		else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
-			scrollWorld(1, 0);
-
-		} // else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right));
-
-		if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
-			scrollWorld(0, -1);
-
-		} // if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up));
-		else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
-			scrollWorld(0, 1);
-
-		} // else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down));
-
-		wind.clear();
-
-		for(auto& chunkRow : chunks) {
-			for(auto& chunk : chunkRow) {
-				for(auto& row : chunk) {
-					for(auto& t : row) {
-						wind.draw(t);
-
-					} // for(auto& t : row);
-
-				} // for(auto& row : chunks[chunkY][chunkX]);
-
-			} // for(auto& chunk : chunkRow);
-
-		} // for(auto& chunkRow : chunks);
-
-		wind.display();
+		} // else;
 
 	} // while(wind.isOpen());
 
 } // void App::run();
+
+void App::genState() {
+	sf::Font font;
+	font.loadFromFile("DroidSans.ttf");
+
+	sf::Text loadMsg;
+	loadMsg.setFont(font);
+	loadMsg.setCharacterSize(30);
+	loadMsg.setColor(sf::Color::White);
+
+	while(state == State::GEN) {
+		wind.clear();
+
+		loadMsg.setString("Generating World...");
+		wind.draw(loadMsg);
+
+		wind.display();
+
+	} // while(state == State::GEN);
+
+	wind.setActive(false);
+
+} // void App::genState();
+
+void App::readyState() {
+	sf::Event e;
+	while(wind.pollEvent(e)) {
+		if(e.type == sf::Event::Closed) {
+			wind.close(); 
+
+		} // if(e.type == sf::Event::Closed);
+
+		if(e.type == sf::Event::KeyPressed) {
+			if(e.key.code == sf::Keyboard::Space) {
+				state = State::GEN;
+
+			} // if(e.key.code = sf::Keyboard::Space);
+
+		} // if(e.type = sf::Event::KeyPressed);
+
+	} // while(wind.pollEvent(e));
+
+	if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
+		scrollWorld(-1, 0);
+
+	} // if(sf::Keyboard::Left::isPressed());
+	else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
+		scrollWorld(1, 0);
+
+	} // else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right));
+
+	if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
+		scrollWorld(0, -1);
+
+	} // if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up));
+	else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
+		scrollWorld(0, 1);
+
+	} // else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down));
+
+	wind.clear();
+
+	for(auto& chunkRow : chunks) {
+		for(auto& chunk : chunkRow) {
+			for(auto& row : chunk) {
+				for(auto& t : row) {
+					wind.draw(t);
+
+				} // for(auto& t : row);
+
+			} // for(auto& row : chunks[chunkY][chunkX]);
+
+		} // for(auto& chunk : chunkRow);
+
+	} // for(auto& chunkRow : chunks);
+
+	wind.display();
+
+} // void App::readyState();
 
 WV_NS_END
