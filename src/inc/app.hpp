@@ -4,16 +4,20 @@
 #include "defines.hpp"
 
 #include <array>
+#include <iostream>
 #include <cstdlib>
 #include <map>
+#include <vector>
 
 #include <SFML/Graphics.hpp>
 
-#include <wg/world.hpp>
+#include <wg/eworld.hpp>
 #include <wg/noisemap.hpp>
 #include <wg/tiledef.hpp>
 
 WV_NS
+
+typedef std::vector<std::vector<sf::RectangleShape>> Chunk;
 
 class App {
 public:
@@ -26,8 +30,11 @@ private:
 	sf::RenderWindow wind;
 
 	std::map<unsigned int, sf::Color> tileColours;
-	std::vector<std::vector<sf::RectangleShape>> tiles;
+	std::array<std::array<Chunk, 4>, 4> chunks;
 
+	int xOffset, yOffset;
+
+	void clearChunks();
 	void generateWorld();
 	void initWindow();
 

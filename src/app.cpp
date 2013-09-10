@@ -14,11 +14,20 @@ void App::init() {
 
 } // void App::init();
 
-void App::generateWorld() {
-	wg::World* w = (new wg::World)->setChunkSize(WV_CHUNK_SIZE);
+void App::clearChunks() {
+	for(int i = 0; i < 4; ++i) {
+		chunks[i].fill(Chunk());
 
-	tileColours.clear();
-	tiles.clear();
+	} // for(int i = 0; i < 3; ++i);
+
+} // void App::clearChunks();
+
+void App::generateWorld() {
+	std::cout << "Generating New World: " << std::endl;
+
+	wg::EnhancedWorld<sf::Color>* w = (new wg::EnhancedWorld<sf::Color>)->setChunkSize(WV_CHUNK_SIZE);
+
+	clearChunks();
 
 	wg::RandomNoiseMap* heightmap = w->addRandomNoiseMap()
 		->setSeed(std::to_string(rand()))
@@ -32,63 +41,82 @@ void App::generateWorld() {
 		->setSeed(std::to_string(rand()))
 		->setGridSize(0.03);
 
-	wg::TileDef* tileWater = w->addTileDefinition()
+	// Water
+	w->addTileDefinition(sf::Color(0, 255, 255))
 		->addConstraint({heightmap, wg::ConstraintType::LT, -0.3});
 
-	wg::TileDef* tileBeach = w->addTileDefinition()
+	// Beach
+	w->addTileDefinition(sf::Color(255, 200, 0))
 		->addConstraint({heightmap, wg::ConstraintType::LT, -0.2});
 
-	wg::TileDef* tileHighMnt = w->addTileDefinition()
+	// High Mountains
+	w->addTileDefinition(sf::Color(250, 250, 250))
 		->addConstraint({heightmap, wg::ConstraintType::GT, 0.6})
 		->addConstraint({random, wg::ConstraintType::GT, 0.2});
 
-	wg::TileDef* tileMnt = w->addTileDefinition()
+	// Mountains
+	w->addTileDefinition(sf::Color(180, 180, 180))
 		->addConstraint({heightmap, wg::ConstraintType::GT, 0.45});
 
-	wg::TileDef* tileForest = w->addTileDefinition()
+	// Forest
+	w->addTileDefinition(sf::Color(0, 128, 0))
 		->addConstraint({heightmap, wg::ConstraintType::GT, -0.1})
 		->addConstraint({climate, wg::ConstraintType::GT, 0.2});
 
-	wg::TileDef* tileDesert = w->addTileDefinition()
+	// Desert
+	w->addTileDefinition(sf::Color(255, 200, 0))
 		->addConstraint({heightmap, wg::ConstraintType::GT, -0.1})
 		->addConstraint({climate, wg::ConstraintType::LT, -0.45});
 
-	wg::TileDef* tilePlains = w->addTileDefinition();
+	// Plains
+	w->addTileDefinition(sf::Color(0, 255, 0));
 
-	tileColours.insert({tileWater->getId(), sf::Color(0, 255, 255)});
-	tileColours.insert({tileBeach->getId(), sf::Color(255, 200, 0)});
-	tileColours.insert({tileMnt->getId(), sf::Color(180, 180, 180)});
-	tileColours.insert({tileHighMnt->getId(), sf::Color(250, 250, 250)});
-	tileColours.insert({tileForest->getId(), sf::Color(0, 128, 0)});
-	tileColours.insert({tileDesert->getId(), sf::Color(255, 200, 0)});
-	tileColours.insert({tilePlains->getId(), sf::Color(0, 255, 0)});
+	for(int chunkX = 0; chunkX < 4; ++chunkX) {
+		for(int chunkY = 0; chunkY < 4; ++chunkY) {
+			std::cout << "	Generating Chunk (" << chunkX - 1 << ", " << chunkY - 1 << ")" << std::endl;
 
-	for(auto& row : w->generate(0, 0)->getMap()) {
-		tiles.push_back(std::vector<sf::RectangleShape>());
+			int x = chunkX - 1, y = chunkY - 1;
+			int tileX = 0, tileY = 0;
+			for(auto& row : w->generate(x, y)->getObjects()) {
+				chunks[chunkY][chunkX].push_back(std::vector<sf::RectangleShape>());
 
-		for(auto& id : row) {
-			tiles.back().push_back(sf::RectangleShape(sf::Vector2f(WV_TILE_SIZE, WV_TILE_SIZE)));
-			tiles.back().back().setPosition((tiles.back().size() - 1) * WV_TILE_SIZE, (tiles.size() - 1) * WV_TILE_SIZE);
-			tiles.back().back().setFillColor(tileColours[id]);
+				tileX = 0;
 
-		} // for(auto& id : row);
+				for(sf::Color& colour : row) {
+					chunks[chunkY][chunkX].back().push_back(sf::RectangleShape(sf::Vector2f(WV_TILE_SIZE, WV_TILE_SIZE)));
 
-	} // for(auto& row : w->generate(0, 0)->getMap());
+					chunks[chunkY][chunkX].back().back().setPosition((x * WV_TILE_SIZE * WV_CHUNK_SIZE) + (tileX * WV_TILE_SIZE), 
+							(y * WV_TILE_SIZE * WV_CHUNK_SIZE) + (tileY * WV_TILE_SIZE));
+
+					chunks[chunkY][chunkX].back().back().setFillColor(colour);
+
+					tileX++;
+
+				} // for(sf::Color& colour : row);
+
+				tileY++;
+
+			} // for(auto& row : w->generate(chunkX - 1, chunkY - 1)->getObjects());
+
+		} // for(int chunkY = 0; chunkY < 3; ++chunkY);
+
+	} // for(int chunkX = 0; chunkX < 3; ++chunkX);
+
+	std::cout << "Done!" << std::endl;
 
 } // void App::generateWorld();
 
 void App::initWindow() {
-	wind.create(sf::VideoMode(640, 640), WV_TITLE);
+	wind.create(sf::VideoMode(WV_CHUNK_SIZE * WV_TILE_SIZE * 2, WV_CHUNK_SIZE * WV_TILE_SIZE * 2), WV_TITLE);
 
 } // void App::initWindow();
-
 
 void App::run() {
 	while(wind.isOpen()) {
 		sf::Event e;
 		while(wind.pollEvent(e)) {
 			if(e.type == sf::Event::Closed) {
-				wind.close();
+				wind.close(); 
 
 			} // if(e.type == sf::Event::Closed);
 
@@ -104,13 +132,19 @@ void App::run() {
 
 		wind.clear();
 
-		for(auto& row : tiles) {
-			for(auto& t : row) {
-				wind.draw(t);
+		for(auto& chunkRow : chunks) {
+			for(auto& chunk : chunkRow) {
+				for(auto& row : chunk) {
+					for(auto& t : row) {
+						wind.draw(t);
 
-			} // for(auto& t : row);
+					} // for(auto& t : row);
 
-		} // for(auto& row : tiles);
+				} // for(auto& row : chunks[chunkY][chunkX]);
+
+			} // for(auto& chunk : chunkRow);
+
+		} // for(auto& chunkRow : chunks);
 
 		wind.display();
 

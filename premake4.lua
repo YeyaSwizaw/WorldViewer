@@ -5,7 +5,7 @@ project "worldview"
 	kind "ConsoleApp"
 	language "C++"
 	files { "src/**" }
-	links { "sfml-graphics", "sfml-window", "sfml-system", "worldgen" }
+	links { "noise", "sfml-graphics", "sfml-window", "sfml-system", "worldgen" }
 	libdirs { "." }
 	includedirs { "." }
 	objdir "build/obj"
