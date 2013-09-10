@@ -8,7 +8,9 @@
 #include <cstdlib>
 #include <map>
 #include <vector>
+#include <algorithm>
 
+#include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
 
 #include <wg/eworld.hpp>
@@ -29,14 +31,18 @@ public:
 private:
 	sf::RenderWindow wind;
 
+	wg::EnhancedWorld<sf::Color>* w;
 	std::map<unsigned int, sf::Color> tileColours;
-	std::array<std::array<Chunk, 4>, 4> chunks;
+	std::array<std::array<Chunk, 6>, 6> chunks;
 
 	int xOffset, yOffset;
+	int xChunkOff, yChunkOff;
 
 	void clearChunks();
 	void generateWorld();
 	void initWindow();
+
+	void scrollWorld(int x, int y);
 
 }; // class App;
 

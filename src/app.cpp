@@ -15,7 +15,7 @@ void App::init() {
 } // void App::init();
 
 void App::clearChunks() {
-	for(int i = 0; i < 4; ++i) {
+	for(int i = 0; i < 6; ++i) {
 		chunks[i].fill(Chunk());
 
 	} // for(int i = 0; i < 3; ++i);
@@ -25,9 +25,13 @@ void App::clearChunks() {
 void App::generateWorld() {
 	std::cout << "Generating New World: " << std::endl;
 
-	wg::EnhancedWorld<sf::Color>* w = (new wg::EnhancedWorld<sf::Color>)->setChunkSize(WV_CHUNK_SIZE);
+	w = (new wg::EnhancedWorld<sf::Color>)->setChunkSize(WV_CHUNK_SIZE);
 
 	clearChunks();
+	xOffset = 0;
+	yOffset = 0;
+	xChunkOff = 0;
+	yChunkOff = 0;
 
 	wg::RandomNoiseMap* heightmap = w->addRandomNoiseMap()
 		->setSeed(std::to_string(rand()))
@@ -71,8 +75,8 @@ void App::generateWorld() {
 	// Plains
 	w->addTileDefinition(sf::Color(0, 255, 0));
 
-	for(int chunkX = 0; chunkX < 4; ++chunkX) {
-		for(int chunkY = 0; chunkY < 4; ++chunkY) {
+	for(int chunkX = 0; chunkX < 6; ++chunkX) {
+		for(int chunkY = 0; chunkY < 6; ++chunkY) {
 			std::cout << "	Generating Chunk (" << chunkX - 1 << ", " << chunkY - 1 << ")" << std::endl;
 
 			int x = chunkX - 1, y = chunkY - 1;
@@ -107,9 +111,161 @@ void App::generateWorld() {
 } // void App::generateWorld();
 
 void App::initWindow() {
-	wind.create(sf::VideoMode(WV_CHUNK_SIZE * WV_TILE_SIZE * 2, WV_CHUNK_SIZE * WV_TILE_SIZE * 2), WV_TITLE);
+	wind.create(sf::VideoMode(WV_CHUNK_SIZE * WV_TILE_SIZE * 4, WV_CHUNK_SIZE * WV_TILE_SIZE * 4), WV_TITLE);
 
 } // void App::initWindow();
+
+void App::scrollWorld(int x, int y) {
+	xOffset += x * WV_SCROLL_SPEED;
+	yOffset += y * WV_SCROLL_SPEED;
+
+	std::cout << "Offset: (" << xOffset << ", " << yOffset << ")" << std::endl;
+
+	for(auto& chunkRow : chunks) {
+		for(auto& chunk : chunkRow) {
+			for(auto& row : chunk) {
+				for(auto& t : row) {
+					t.move(x * WV_SCROLL_SPEED, y * WV_SCROLL_SPEED);
+
+				} // for(auto& t : row);
+
+			} // for(auto& row : chunks[chunkY][chunkX]);
+
+		} // for(auto& chunk : chunkRow);
+
+	} // for(auto& chunkRow : chunks);
+
+	// Generate new chunks if neccesary
+	if(xOffset < 0 - ((WV_CHUNK_SIZE * WV_TILE_SIZE) / 2)) {
+		xOffset += WV_CHUNK_SIZE * WV_TILE_SIZE;
+		xChunkOff += 1;
+
+		for(int chunkY = 0; chunkY < 6; ++chunkY) {
+			for(int chunkX = 0; chunkX < 5; ++chunkX) {
+				for(int tileY = 0; tileY < WV_CHUNK_SIZE; ++tileY) {
+					for(int tileX = 0; tileX < WV_CHUNK_SIZE; ++tileX) {
+						chunks[chunkY][chunkX][tileY][tileX].move(WV_CHUNK_SIZE * WV_TILE_SIZE, 0);
+						chunks[chunkY][chunkX][tileY][tileX].setFillColor(chunks[chunkY][chunkX+1][tileY][tileX].getFillColor());
+
+					} // for(int tileX = 0; tileX < WV_CHUNK_SIZE; ++tileX);
+
+				} // for(int tileY = 0; tileY < WV_CHUNK_SIZE; ++tileY);
+
+			} // for(int chunkX = 0; chunkX < 5; ++chunkX);
+
+			std::cout << "Generating Chunk (" << 4 + xChunkOff << ", " << (chunkY - 1) + yChunkOff << ")" << std::endl;
+			w->generate(4 + xChunkOff, (chunkY - 1) + yChunkOff);
+
+			for(int tileY = 0; tileY < WV_CHUNK_SIZE; ++tileY) {
+				for(int tileX = 0; tileX < WV_CHUNK_SIZE; ++tileX) {
+						chunks[chunkY][5][tileY][tileX].move(WV_CHUNK_SIZE * WV_TILE_SIZE, 0);
+						chunks[chunkY][5][tileY][tileX].setFillColor(w->getObject(tileX, tileY));
+
+				} // for(int tileX = 0; tileX < WV_CHUNK_SIZE; ++tileX);
+
+			} // for(int tileY = 0; tileY < WV_CHUNK_SIZE; ++tileY);
+
+		} // for(int chunkY = 0; chunkY < 6; ++chunkY);
+
+	} // if(xOffset < -(WV_CHUNK_SIZE * WV_TILE_SIZE / 2));
+	else if(xOffset > ((WV_CHUNK_SIZE * WV_TILE_SIZE) / 2)) {
+		xOffset -= WV_CHUNK_SIZE * WV_TILE_SIZE;
+		xChunkOff -= 1;
+
+		for(int chunkY = 5; chunkY >= 0; --chunkY) {
+			for(int chunkX = 5; chunkX >= 1; --chunkX) {
+				for(int tileY = 0; tileY < WV_CHUNK_SIZE; ++tileY) {
+					for(int tileX = 0; tileX < WV_CHUNK_SIZE; ++tileX) {
+						chunks[chunkY][chunkX][tileY][tileX].move(0 - (WV_CHUNK_SIZE * WV_TILE_SIZE), 0);
+						chunks[chunkY][chunkX][tileY][tileX].setFillColor(chunks[chunkY][chunkX-1][tileY][tileX].getFillColor());
+
+					} // for(int tileX = 0; tileX < WV_CHUNK_SIZE; ++tileX);
+
+				} // for(int tileY = 0; tileY < WV_CHUNK_SIZE; ++tileY);
+
+			} // for(int chunkX = 5; chunkX >= 1; --chunkX);
+
+			std::cout << "Generating Chunk (" << -1 + xChunkOff << ", " << (chunkY - 1) + yChunkOff << ")" << std::endl;
+			w->generate(-1 + xChunkOff, (chunkY - 1) + yChunkOff);
+
+			for(int tileY = 0; tileY < WV_CHUNK_SIZE; ++tileY) {
+				for(int tileX = 0; tileX < WV_CHUNK_SIZE; ++tileX) {
+						chunks[chunkY][0][tileY][tileX].move(0 - (WV_CHUNK_SIZE * WV_TILE_SIZE), 0);
+						chunks[chunkY][0][tileY][tileX].setFillColor(w->getObject(tileX, tileY));
+
+				} // for(int tileX = 0; tileX < WV_CHUNK_SIZE; ++tileX);
+
+			} // for(int tileY = 0; tileY < WV_CHUNK_SIZE; ++tileY);
+
+		} // for(int chunkY = 5; chunkY >= 0; --chunkY);
+
+	} // else if(xOffset > ((WV_CHUNK_SIZE * WV_TILE_SIZE) / 2));
+	else if(yOffset < 0 - ((WV_CHUNK_SIZE * WV_TILE_SIZE) / 2)) {
+		yOffset += WV_CHUNK_SIZE * WV_TILE_SIZE;
+		yChunkOff += 1;
+
+		for(int chunkX = 0; chunkX < 6; ++chunkX) {
+			for(int chunkY = 0; chunkY < 5; ++chunkY) {
+				for(int tileY = 0; tileY < WV_CHUNK_SIZE; ++tileY) {
+					for(int tileX = 0; tileX < WV_CHUNK_SIZE; ++tileX) {
+						chunks[chunkY][chunkX][tileY][tileX].move(0, WV_CHUNK_SIZE * WV_TILE_SIZE);
+						chunks[chunkY][chunkX][tileY][tileX].setFillColor(chunks[chunkY+1][chunkX][tileY][tileX].getFillColor());
+
+					} // for(int tileX = 0; tileX < WV_CHUNK_SIZE; ++tileX);
+
+				} // for(int tileY = 0; tileY < WV_CHUNK_SIZE; ++tileY);
+
+			} // for(int chunkX = 0; chunkX < 5; ++chunkX);
+
+			std::cout << "Generating Chunk (" << (chunkX - 1) + xChunkOff << ", " << 4 + yChunkOff << ")" << std::endl;
+			w->generate((chunkX - 1) + xChunkOff, 4 + yChunkOff);
+
+			for(int tileY = 0; tileY < WV_CHUNK_SIZE; ++tileY) {
+				for(int tileX = 0; tileX < WV_CHUNK_SIZE; ++tileX) {
+						chunks[5][chunkX][tileY][tileX].move(0, WV_CHUNK_SIZE * WV_TILE_SIZE);
+						chunks[5][chunkX][tileY][tileX].setFillColor(w->getObject(tileX, tileY));
+
+				} // for(int tileX = 0; tileX < WV_CHUNK_SIZE; ++tileX);
+
+			} // for(int tileY = 0; tileY < WV_CHUNK_SIZE; ++tileY);
+
+		} // for(int chunkY = 0; chunkY < 6; ++chunkY);
+
+	} // if(xOffset < -(WV_CHUNK_SIZE * WV_TILE_SIZE / 2));
+	else if(yOffset > ((WV_CHUNK_SIZE * WV_TILE_SIZE) / 2)) {
+		yOffset -= WV_CHUNK_SIZE * WV_TILE_SIZE;
+		yChunkOff -= 1;
+
+		for(int chunkX = 5; chunkX >= 0; --chunkX) {
+			for(int chunkY = 5; chunkY >= 1; --chunkY) {
+				for(int tileY = 0; tileY < WV_CHUNK_SIZE; ++tileY) {
+					for(int tileX = 0; tileX < WV_CHUNK_SIZE; ++tileX) {
+						chunks[chunkY][chunkX][tileY][tileX].move(0, 0 - (WV_CHUNK_SIZE * WV_TILE_SIZE));
+						chunks[chunkY][chunkX][tileY][tileX].setFillColor(chunks[chunkY-1][chunkX][tileY][tileX].getFillColor());
+
+					} // for(int tileX = 0; tileX < WV_CHUNK_SIZE; ++tileX);
+
+				} // for(int tileY = 0; tileY < WV_CHUNK_SIZE; ++tileY);
+
+			} // for(int chunkX = 5; chunkX >= 1; --chunkX);
+
+			std::cout << "Generating Chunk (" << (chunkX - 1) + xChunkOff << ", " << -1 + yChunkOff << ")" << std::endl;
+			w->generate((chunkX - 1) + xChunkOff, -1 + yChunkOff);
+
+			for(int tileY = 0; tileY < WV_CHUNK_SIZE; ++tileY) {
+				for(int tileX = 0; tileX < WV_CHUNK_SIZE; ++tileX) {
+						chunks[0][chunkX][tileY][tileX].move(0, 0 - (WV_CHUNK_SIZE * WV_TILE_SIZE));
+						chunks[0][chunkX][tileY][tileX].setFillColor(w->getObject(tileX, tileY));
+
+				} // for(int tileX = 0; tileX < WV_CHUNK_SIZE; ++tileX);
+
+			} // for(int tileY = 0; tileY < WV_CHUNK_SIZE; ++tileY);
+
+		} // for(int chunkY = 5; chunkY >= 0; --chunkY);
+
+	} // else if(xOffset > ((WV_CHUNK_SIZE * WV_TILE_SIZE) / 2));
+
+} // void App::scrollWorld(int x, int y);
 
 void App::run() {
 	while(wind.isOpen()) {
@@ -129,6 +285,24 @@ void App::run() {
 			} // if(e.type = sf::Event::KeyPressed);
 
 		} // while(wind.pollEvent(e));
+
+		if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
+			scrollWorld(-1, 0);
+
+		} // if(sf::Keyboard::Left::isPressed());
+		else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
+			scrollWorld(1, 0);
+
+		} // else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right));
+
+		if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
+			scrollWorld(0, -1);
+
+		} // if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up));
+		else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
+			scrollWorld(0, 1);
+
+		} // else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down));
 
 		wind.clear();
 
