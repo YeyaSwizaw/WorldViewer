@@ -25,6 +25,7 @@ void App::clearChunks() {
 
 void App::generateWorld() {
 	std::cout << "Generating New World: " << std::endl;
+	msg = "Setting Parameters";
 
 	w = (new wg::EnhancedWorld<sf::Color>)->setChunkSize(WV_CHUNK_SIZE);
 
@@ -79,6 +80,7 @@ void App::generateWorld() {
 	for(int chunkX = 0; chunkX < 6; ++chunkX) {
 		for(int chunkY = 0; chunkY < 6; ++chunkY) {
 			std::cout << "	Generating Chunk (" << chunkX - 1 << ", " << chunkY - 1 << ")" << std::endl;
+			msg = "Generating Chunk (" + std::to_string(chunkX - 1) + ", " + std::to_string(chunkY - 1) + ")";
 
 			int x = chunkX - 1, y = chunkY - 1;
 			int tileX = 0, tileY = 0;
@@ -108,6 +110,7 @@ void App::generateWorld() {
 	} // for(int chunkX = 0; chunkX < 3; ++chunkX);
 
 	std::cout << "Done!" << std::endl;
+	msg = "Done";
 
 	state = State::READY;
 
@@ -294,15 +297,27 @@ void App::genState() {
 	sf::Font font;
 	font.loadFromFile("DroidSans.ttf");
 
+	sf::RectangleShape progBarOuter(sf::Vector2f(200, 50));
+	progBarOuter.setPosition(220, 295);
+	progBarOuter.setFillColor(sf::Color(30, 30, 100));
+	progBarOuter.setOutlineColor(sf::Color(60, 60, 150));
+	progBarOuter.setOutlineThickness(2);
+
 	sf::Text loadMsg;
 	loadMsg.setFont(font);
 	loadMsg.setCharacterSize(30);
 	loadMsg.setColor(sf::Color::White);
+	loadMsg.setPosition(225, 300);
 
 	while(state == State::GEN) {
 		wind.clear();
 
-		loadMsg.setString("Generating World...");
+		loadMsg.setString(msg);
+		progBarOuter.setSize(sf::Vector2f(loadMsg.getLocalBounds().width + 10, 50));
+		progBarOuter.setPosition(320 - (progBarOuter.getSize().x / 2), 295);
+		loadMsg.setPosition(progBarOuter.getPosition().x + 5, 300);
+
+		wind.draw(progBarOuter);
 		wind.draw(loadMsg);
 
 		wind.display();

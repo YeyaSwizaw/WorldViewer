@@ -37,6 +37,7 @@ private:
 	}; // enum State;
 
 	State state;
+	std::string msg;
 
 	sf::RenderWindow wind;
 
